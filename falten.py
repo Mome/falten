@@ -6,7 +6,7 @@ Converts bar-bra notation for the side views of cross-folded paper to a
 with a fixed bitmap font like GNU Unifont Mono.
 """
 
-from itertools import cycle
+from itertools import cycle, chain
 
 try:
     import colored
@@ -105,6 +105,31 @@ def construct_layers(s, layers, lay_num=0, i=0):
         i+=1
 
 
+def _next_direction(segment, direction):
+    if segment == top_left:
+        if direction == 'up':
+            direction = 'right'
+        if direction == 'left':
+            direction = 'down'
+    if segment == top_right:
+        if direction == 'up':
+            direction = 'left'
+        if direction == 'right':
+            direction = 'down'
+    if segment == bottom_left:
+        if direction == 'down':
+            direction = 'right'
+        if direction == 'left':
+            direction = 'up'
+    if segment == bottom_right:
+        if direction == 'down':
+            direction = 'left'
+        if direction == 'right':
+            direction = 'up'
+
+    return direction
+
+
 def colorize(pipes, plate=default_plate):
     """Colorizes each individual edge."""
 
@@ -114,65 +139,55 @@ def colorize(pipes, plate=default_plate):
     already_colored = []
 
     for i, segment in enumerate(lines[0]):
-        if (segment == vertical) and (i not in already_colored):
-            direction = 'down'
-            color = next(colors)
-            y = 0
-            x = i
-            while y >= 0:
-                segment = pixels[y][x]
-                pixels[y][x] = colored.fg(color) + segment + colored.attr('reset')
+        if (segment != vertical) or (i in already_colored):
+            continue
+        direction = 'down'
+        color = next(colors)
+        y = 0
+        x = i
+        while y >= 0:
+            segment = pixels[y][x]
+            pixels[y][x] = colored.fg(color) + segment + colored.attr('reset')
 
-                if segment == top_left:
-                    if direction == 'up':
-                        direction = 'right'
-                    if direction == 'left':
-                        direction = 'down'
-                if segment == top_right:
-                    if direction == 'up':
-                        direction = 'left'
-                    if direction == 'right':
-                        direction = 'down'
-                if segment == bottom_left:
-                    if direction == 'down':
-                        direction = 'right'
-                    if direction == 'left':
-                        direction = 'up'
-                if segment == bottom_right:
-                    if direction == 'down':
-                        direction = 'left'
-                    if direction == 'right':
-                        direction = 'up'
+            direction = _next_direction(segment, direction)
 
-                if direction == 'down':
-                    y += 1
-                elif direction == 'up':
-                    y -= 1
-                elif direction == 'right':
-                    x += 1
-                elif direction == 'left':
-                    x -= 1
+            if direction == 'down':
+                y += 1
+            elif direction == 'up':
+                y -= 1
+            elif direction == 'right':
+                x += 1
+            elif direction == 'left':
+                x -= 1
 
-                #print(segment, direction, color, x, y)
+            #print(segment, direction, color, x, y)
 
-            already_colored.append(x)
+        already_colored.append(x)
 
     return '\n'.join(''.join(line) for line in pixels)
 
 
 def main():
     import argparse
+    import sys
+
     parser = argparse.ArgumentParser(
         description="Converts bar-bra notation for the side views of cross-folded paper to a 2-dimensional terminal output. For color options look at: github.com/dslackw/colored",
         epilog= 'Example: python falten.py -p "cyan magenta blue" "||.||().||.||()||()"')
     parser.add_argument('--plate', '-p', metavar="str",
         default=default_plate,
         help="Space separated string of colors.")
-    parser.add_argument('barbra', nargs='+',
+    parser.add_argument('barbra', nargs='*', default=sys.stdin,
         help="Cross-fold in bar-bra notation.")
     args = parser.parse_args()
 
-    for bb in args.barbra:
+    if args.barbra == sys.stdin:
+        args.barbra = args.barbra.readlines()
+
+    falt_iter = (string.split() for string in args.barbra)
+    falt_iter = filter(bool, chain(*falt_iter))
+
+    for bb in falt_iter:
         falt_2d_str = to_2d_repr(bb)
         if args.plate:
             falt_2d_str = colorize(falt_2d_str, args.plate)
