@@ -129,8 +129,13 @@ def _next_direction(segment, direction):
     return direction
 
 
-def colorize(pipes, plate):
+def colorize(pipes, plate, background=False):
     """Colorizes each individual edge."""
+
+    if background:
+        color_func = colored.bg
+    else:
+        color_func = colored.fg
 
     lines = pipes.split('\n')
     pixels = list(map(list, lines))
@@ -145,7 +150,7 @@ def colorize(pipes, plate):
         x = i
         while 0 <= y < len(lines):
             segment = pixels[y][x]
-            pixels[y][x] = colored.fg(color) + segment + colored.attr('reset')
+            pixels[y][x] = color_func(color) + segment + colored.attr('reset')
 
             direction = _next_direction(segment, direction)
 
@@ -175,6 +180,7 @@ def main():
     parser.add_argument('--plate', '-p', metavar="str",
         default=default_plate,
         help="Space separated string of colors.")
+    parser.add_argument('-b', '--background', action='store_true', help="Color background instead of foreground!")
     parser.add_argument('barbra', nargs='*', default=sys.stdin,
         help="Cross-fold in bar-bra notation.")
     args = parser.parse_args()
@@ -191,7 +197,7 @@ def main():
     for bb in falt_iter:
         falt_2d_str = to_2d_repr(bb)
         if args.plate:
-            falt_2d_str = colorize(falt_2d_str, plate)
+            falt_2d_str = colorize(falt_2d_str, plate, args.background)
         print(falt_2d_str, end='\n')
 
 def print_colors():
