@@ -15,6 +15,8 @@ except Exception as e:
     print('Install with: ´pip install colored´')
 
 
+default_plate = "red green yellow blue magenta cyan"
+
 bottom_left = '╰' #'└'
 top_right = '╮' #'┐'
 horizontal = '─' #'─'
@@ -27,6 +29,7 @@ straigts = (horizontal, vertical)
 
 
 def to_2d_repr(s):
+    s = s.replace('.',',')
     s = s.replace(';',',')
     blocks = s.split(',')
     pairs = [process_one_block(b) for b in blocks]
@@ -86,8 +89,6 @@ def correct_layers(layers):
                     layers[i][j]=vertical
 
 
-
-
 def construct_layers(s, layers, lay_num=0, i=0):
     if lay_num == len(layers):
         layers.append([horizontal]*len(s))
@@ -103,7 +104,6 @@ def construct_layers(s, layers, lay_num=0, i=0):
             return i
         i+=1
 
-default_plate = "red green yellow blue magenta cyan"
 
 def colorize(pipes, plate=default_plate):
     """Colorizes each individual edge."""
@@ -163,7 +163,8 @@ def colorize(pipes, plate=default_plate):
 def main():
     import argparse
     parser = argparse.ArgumentParser(
-        description="Converts bar-bra notation for the side views of cross-folded paper to a2-dimensional terminal output.")
+        description="Converts bar-bra notation for the side views of cross-folded paper to a 2-dimensional terminal output. For color options look at: github.com/dslackw/colored",
+        epilog= 'Example: python falten.py -p "cyan magenta blue" "||.||().||.||()||()"')
     parser.add_argument('--plate', '-p', metavar="str",
         default=default_plate,
         help="Space separated string of colors.")
