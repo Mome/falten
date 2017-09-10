@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 
 """
 Converts bar-bra notation for the side views of cross-folded paper to a
@@ -10,16 +10,19 @@ from itertools import cycle, chain
 
 try:
     import colored
+    color_available = True
 except Exception as e:
     print(e)
     print('Install with: ´pip install colored´')
+    color_available = False
 
 
-default_plate = "red green yellow blue magenta cyan"
+default_plate = ("red green yellow blue magenta cyan light_red light_green "
+    + "light_yellow light_blue light_magenta light_cyan dark_gray light_gray")
 
 bottom_left = '╰' #'└'
 top_right = '╮' #'┐'
-horizontal = '─' #'─'
+horizontal = '─'
 vertical = '│'
 bottom_right = '╯' #'┘'
 top_left = '╭' #'┌'
@@ -150,7 +153,9 @@ def colorize(pipes, plate, background=False):
         x = i
         while 0 <= y < len(lines):
             segment = pixels[y][x]
-            pixels[y][x] = color_func(color) + segment + colored.attr('reset')
+            pixel = color_func(color)
+            pixel += segment + colored.attr('reset')
+            pixels[y][x] = pixel
 
             direction = _next_direction(segment, direction)
 
@@ -180,7 +185,8 @@ def main():
     parser.add_argument('--plate', '-p', metavar="str",
         default=default_plate,
         help="Space separated string of colors.")
-    parser.add_argument('-b', '--background', action='store_true', help="Color background instead of foreground!")
+    parser.add_argument('-b', '--background', action='store_true', help="Color background instead of foreground.")
+    #parser.add_argument('-B', '--bold', action='store_true', help="Draw all lines bold.")
     parser.add_argument('barbra', nargs='*', default=sys.stdin,
         help="Cross-fold in bar-bra notation.")
     args = parser.parse_args()
@@ -191,12 +197,12 @@ def main():
     falt_iter = (string.split() for string in args.barbra)
     falt_iter = filter(bool, chain(*falt_iter))
 
-    if args.plate:
+    if args.plate and color_available:
         plate = cycle(args.plate.split())
 
     for bb in falt_iter:
         falt_2d_str = to_2d_repr(bb)
-        if args.plate:
+        if args.plate and color_available:
             falt_2d_str = colorize(falt_2d_str, plate, args.background)
         print(falt_2d_str, end='\n')
 
