@@ -157,11 +157,16 @@ class SvgFold(SvgImage):
                 path += up_curve + down_curve
 
             path += ('v', -max_pack_size * h_dist / 2)
-            self.add('path', d = path, fill="none", stroke=next(self.plate))
+            self.add('path',
+                d = path,
+                fill="none",
+                stroke=next(self.plate),
+                style="stroke-width:7",
+            )
             already_done.append(end_i)
 
     def render(self):
         self.clear()
-        self.add('rect', width=self.width, height=self.height, style="fill:lightgrey")
+        self.add('rect', width=self.width, height=self.height, style="fill:white")
         self.draw_lines()
         return super().render()
