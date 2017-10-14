@@ -15,8 +15,7 @@ from unicode_falts import to_2d_repr, color_available, colorize
 default_plate_unicode = ("red green yellow blue magenta cyan light_red light_green "
     + "light_yellow light_blue light_magenta light_cyan dark_gray light_gray")
 
-default_plate_svg = ("red green blue magenta cyan dark_yellow light_red light_green "
-    + "light_blue light_magenta light_cyan dark_gray light_gray")
+default_plate_svg = "blue red green purple orange limegreen magenta cyan brown black"
 
 def main():
     import argparse
