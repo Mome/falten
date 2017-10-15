@@ -66,6 +66,9 @@ class SvgImage():
 
 
 class SvgFold(SvgImage):
+
+    H_CURVE_STRETCH = 1.2
+
     def __init__(self, barbra, width=None, height=None, palette=None):
 
         if width == None:
@@ -98,11 +101,13 @@ class SvgFold(SvgImage):
                 continue
 
             start_point = ('M', w_dist * (i + 1), h_dist)
-            vertical_line = ('v', max_pack_size * h_dist / 2)
+            vertical_line = ('v', max_pack_size * h_dist / (2*bb.pack_sizes[i]))
 
             start_i = i
             end_i = len(bb) - start_i - 1
-            down_curve = SvgFold.get_curve('down', start_i, end_i, w_dist, h_dist)
+            width = (end_i - start_i) * w_dist
+            height = (end_i - start_i) * h_dist * self.H_CURVE_STRETCH
+            down_curve = SvgFold.get_curve('down', width, height)
 
             path = [*start_point, *vertical_line, *down_curve]
 
@@ -110,15 +115,20 @@ class SvgFold(SvgImage):
 
                 start_i = end_i
                 end_i = bb.ambi[end_i]
-                up_curve = SvgFold.get_curve('up', start_i, end_i, w_dist, h_dist)
+                width = (end_i - start_i) * w_dist
+                h_pack_strech = max_pack_size / bb.pack_sizes[start_i]
+                height = (end_i - start_i) * h_dist * h_pack_strech * self.H_CURVE_STRETCH
+                up_curve = SvgFold.get_curve('up', width, height)
 
                 start_i = end_i
                 end_i = len(bb) - start_i - 1
-                down_curve = SvgFold.get_curve('down', start_i, end_i, w_dist, h_dist)
+                width = (end_i - start_i) * w_dist
+                height = (end_i - start_i) * h_dist * self.H_CURVE_STRETCH
+                down_curve = SvgFold.get_curve('down', width, height)
 
                 path += up_curve + down_curve
 
-            path += ('v', -max_pack_size * h_dist / 2)
+            path += ('v', -max_pack_size * h_dist / (2*bb.pack_sizes[end_i]))
             self.add('path',
                 d = path,
                 fill="none",
@@ -134,16 +144,14 @@ class SvgFold(SvgImage):
         return super().render()
 
     @staticmethod
-    def get_curve(direction, start_i, end_i, w_dist, h_dist):
+    def get_curve(direction, width, height):
         assert direction in {'up', 'down'}
 
-        length = end_i - start_i
-
-        end_x = w_dist * length
+        end_x = width
         end_y = 0
 
         control_x = end_x / 2
-        control_y = h_dist * length
+        control_y = height
 
         if (
             (direction == 'up'   and control_y > 0) or
