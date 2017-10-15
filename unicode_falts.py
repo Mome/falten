@@ -1,3 +1,5 @@
+from itertools import cycle
+
 try:
     import colored
     TERMINAL_COLOR_AVAILABLE = True
@@ -6,7 +8,10 @@ except Exception as e:
     print('Terminal coloring not available!')
     print('Install with: ´pip install colored´')
     TERMINAL_COLOR_AVAILABLE = False
-
+    
+default_palette = ("red green yellow blue magenta cyan light_red light_green "
+    + "light_yellow light_blue light_magenta light_cyan dark_gray light_gray")
+  
 bottom_left = '╰' #'└'
 top_right = '╮' #'┐'
 horizontal = '─'
@@ -113,8 +118,13 @@ def _next_direction(segment, direction):
     return direction
 
 
-def colorize(pipes, plate, background=False):
+def colorize(pipes, palette, background=False):
     """Colorizes each individual edge."""
+    
+    if palette == None:
+        palette = default_palette
+
+    palette = cycle(palette.split())
 
     if background:
         color_func = colored.bg
@@ -129,7 +139,7 @@ def colorize(pipes, plate, background=False):
         if (segment != vertical) or (i in already_colored):
             continue
         direction = 'down'
-        color = next(plate)
+        color = next(palette)
         y = 0
         x = i
         while 0 <= y < len(lines):

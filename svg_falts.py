@@ -1,10 +1,11 @@
 from collections import namedtuple
 from operator import sub
 from itertools import cycle
+from random import gauss
 
 SvgElemement = namedtuple("SvgElement", ['name', 'attr'])
 
-
+default_palette = "blue red green purple orange limegreen magenta cyan brown black"
 
 
 class SvgImage():
@@ -67,9 +68,9 @@ class SvgImage():
 
 class SvgFold(SvgImage):
 
-    H_CURVE_STRETCH = 1.2
+    H_CURVE_STRETCH = 1.5
 
-    def __init__(self, barbra, width=None, height=None, palette=None):
+    def __init__(self, barbra, width=None, height=None, palette=None, noise=None):
 
         if width == None:
             width = (len(barbra) + 1) * 30
@@ -80,11 +81,17 @@ class SvgFold(SvgImage):
         super().__init__(width, height)
 
         self.barbra = barbra
-        self.palette = palette if (palette != None) else cycle(['black'])
+        
+        if palette == None:
+            palette = default_palette
+        palette = cycle(palette.split())
+        self.palette = palette
+        
+        self.noise = noise
 
     def draw_lines(self):
         bb = self.barbra
-        max_pack_size = max(bb.pack_sizes)
+        max_pack_size = max(bb.packsizes)
         w_dist = self.width / (len(bb) + 1)
         layers = (max_pack_size + len(bb)) / 2 + 1
         h_dist = self.height / (layers + 1)
@@ -95,19 +102,19 @@ class SvgFold(SvgImage):
         already_done = []
         for i, b in enumerate(bb):
 
-            if b != '|':
+            if bb.packsizes[i] != 1:
                 continue
             if i in already_done:
                 continue
 
             start_point = ('M', w_dist * (i + 1), h_dist)
-            vertical_line = ('v', max_pack_size * h_dist / (2*bb.pack_sizes[i]))
+            vertical_line = ('v', max_pack_size * h_dist / (2 * bb.packsizes[i]))
 
             start_i = i
             end_i = len(bb) - start_i - 1
             width = (end_i - start_i) * w_dist
-            height = (end_i - start_i) * h_dist * self.H_CURVE_STRETCH
-            down_curve = SvgFold.get_curve('down', width, height)
+            #height_scale = (w_dist / h_dist) * self.H_CURVE_STRETCH
+            down_curve = SvgFold.get_curve('down', width, 1.5)
 
             path = [*start_point, *vertical_line, *down_curve]
 
@@ -116,19 +123,25 @@ class SvgFold(SvgImage):
                 start_i = end_i
                 end_i = bb.ambi[end_i]
                 width = (end_i - start_i) * w_dist
-                h_pack_strech = max_pack_size / bb.pack_sizes[start_i]
-                height = (end_i - start_i) * h_dist * h_pack_strech * self.H_CURVE_STRETCH
-                up_curve = SvgFold.get_curve('up', width, height)
+                h_pack_strech = max_pack_size / bb.packsizes[start_i]
+                height_scale = self.H_CURVE_STRETCH * h_pack_strech
+                #print(max_pack_size, bb.packsizes[start_i], h_pack_strech, height_scale)
+                
+                if self.noise:
+                    width += guass(0, self.noise)
+                    height_scale += guass(0, self.noise)
+                
+                up_curve = SvgFold.get_curve('up', width, height_scale)
 
                 start_i = end_i
                 end_i = len(bb) - start_i - 1
                 width = (end_i - start_i) * w_dist
-                height = (end_i - start_i) * h_dist * self.H_CURVE_STRETCH
-                down_curve = SvgFold.get_curve('down', width, height)
+                #height_scale = (w_dist / h_dist) * self.H_CURVE_STRETCH
+                down_curve = SvgFold.get_curve('down', width, 1.5)
 
                 path += up_curve + down_curve
 
-            path += ('v', -max_pack_size * h_dist / (2*bb.pack_sizes[end_i]))
+            path += ('v', -max_pack_size * h_dist / (2*bb.packsizes[end_i]))
             self.add('path',
                 d = path,
                 fill="none",
@@ -144,19 +157,16 @@ class SvgFold(SvgImage):
         return super().render()
 
     @staticmethod
-    def get_curve(direction, width, height):
+    def get_curve(direction, width, scaling):
         assert direction in {'up', 'down'}
 
-        end_x = width
-        end_y = 0
-
-        control_x = end_x / 2
-        control_y = height
-
         if (
-            (direction == 'up'   and control_y > 0) or
-            (direction == 'down' and control_y < 0)
+            (direction == 'up'   and width > 0) or
+            (direction == 'down' and width < 0)
         ):
-            control_y *= -1
+            direction = 1
+        else:
+            direction = 0
 
-        return ('q', control_x, control_y, end_x, end_y)
+        #return ('q', control_x, control_y, end_x, end_y)
+        return ('a', 1, scaling, 0, 0, direction, width, 0)

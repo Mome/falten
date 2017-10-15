@@ -11,7 +11,7 @@ class BarBra(str):
         self._rmbi = tuple((self.ambi[i] - i) for i in range(len(barbra_str)))
 
         # local maximum pack sizes
-        self._pack_sizes = BarBra._get_pack_sizes(self.rmbi)
+        self._packsizes = BarBra._get_packsizes(self.rmbi)
 
         self.sep = sep
 
@@ -24,8 +24,8 @@ class BarBra(str):
         return self._rmbi
 
     @property
-    def pack_sizes(self):
-        return self._pack_sizes
+    def packsizes(self):
+        return self._packsizes
 
     """def __repr__(self):
         return "{cls_}['{bb}']".format(
@@ -34,20 +34,20 @@ class BarBra(str):
         )"""
 
     @staticmethod
-    def _get_pack_sizes(rmbi):
+    def _get_packsizes(rmbi):
         lmps = 0
-        pack_sizes = []
+        packsizes = []
         for ri in rmbi:
 
             if lmps == 0:
                 lmps = ri
 
-            pack_sizes.append(lmps + 1)
+            packsizes.append(lmps + 1)
 
             if ri == -lmps:
                 lmps = 0
 
-        return tuple(pack_sizes)
+        return tuple(packsizes)
 
     @staticmethod
     def _get_matching_brackets(barbra_str):
@@ -65,14 +65,14 @@ class BarBra(str):
         assert len(stack) == 0, "Too many opening backets!"
         return tuple(out)
 
-    def render_svg(self, palette):
+    def render_svg(self, palette = None):
         return SvgFold(self, palette=palette).render()
 
     def render_unicode(self, palette, invert_bg):
         falt_2d_str = to_2d_repr(self)
-        if palette and TERMINAL_COLOR_AVAILABLE:
+        if palette != "" and TERMINAL_COLOR_AVAILABLE:
             falt_2d_str = colorize(falt_2d_str, palette, invert_bg)
         return falt_2d_str
 
-    def _repr_html_(self, palette):
-        return self.render_svg(palette)
+    def _repr_html_(self):
+        return self.render_svg()

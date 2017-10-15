@@ -10,12 +10,6 @@ from itertools import cycle, chain
 
 from barbra import BarBra
 
-default_palette_unicode = ("red green yellow blue magenta cyan light_red light_green "
-    + "light_yellow light_blue light_magenta light_cyan dark_gray light_gray")
-
-default_palette_svg = "blue red green purple orange limegreen magenta cyan brown black"
-
-
 
 def main():
     import argparse
@@ -51,20 +45,13 @@ def main():
     falt_iter = (string.split() for string in args.barbra)
     falt_iter = filter(bool, chain(*falt_iter))
 
-    if args.palette == None:
-        palette = default_palette_svg if args.svg else default_palette_unicode
-    else:
-        palette = args.palette
-
-    palette = cycle(palette.split())
-
     for barbra_str in falt_iter: # this iterates the input lines
         bb = BarBra(barbra_str)
 
         if args.svg:
-            output = bb.render_svg(palette)
+            output = bb.render_svg(args.palette)
         else:
-            output = bb.render_unicode(palette, args.invert_bg)
+            output = bb.render_unicode(args.palette, args.invert_bg)
 
         print(output)
 
