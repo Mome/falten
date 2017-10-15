@@ -5,41 +5,6 @@ from itertools import cycle
 SvgElemement = namedtuple("SvgElement", ['name', 'attr'])
 
 
-def get_matching_brackets(barbra):
-    stack = []
-    out = list(range(len(barbra)))
-    for i, c in enumerate(barbra):
-        if c == '(':
-            stack.append(i)
-        elif c == ')':
-            assert stack, "Non matching closing bracket at index %s!" % i
-            j = stack.pop()
-            out[i] = j
-            out[j] = i
-
-    assert len(stack) == 0, "Too many opening backets!"
-    return out
-
-
-def get_curve(direction, start_i, end_i, w_dist, h_dist):
-
-    assert direction in {'up', 'down'}
-
-    length = end_i - start_i
-
-    end_x = w_dist * length
-    end_y = 0
-
-    control_x = end_x / 2
-    control_y = h_dist * length
-
-    if (
-        (direction == 'up'   and control_y > 0) or
-        (direction == 'down' and control_y < 0)
-    ):
-        control_y *= -1
-
-    return ('q', control_x, control_y, end_x, end_y)
 
 
 class SvgImage():
@@ -101,8 +66,7 @@ class SvgImage():
 
 
 class SvgFold(SvgImage):
-    def __init__(self, barbra, width=None, height=None, plate=None):
-        assert len(barbra) % 2 == 0, "Length of barbra must be even!!"
+    def __init__(self, barbra, width=None, height=None, palette=None):
 
         if width == None:
             width = (len(barbra) + 1) * 30
@@ -113,13 +77,11 @@ class SvgFold(SvgImage):
         super().__init__(width, height)
 
         self.barbra = barbra
-        self.plate = plate if (plate != None) else cycle(['black'])
+        self.palette = palette if (palette != None) else cycle(['black'])
 
     def draw_lines(self):
         bb = self.barbra
-        matching_brackets = get_matching_brackets(bb)
-        diffs = tuple(map(sub, matching_brackets, range(len(bb))))
-        max_pack_size = max(diffs)
+        max_pack_size = max(bb.pack_sizes)
         w_dist = self.width / (len(bb) + 1)
         layers = (max_pack_size + len(bb)) / 2 + 1
         h_dist = self.height / (layers + 1)
@@ -140,19 +102,19 @@ class SvgFold(SvgImage):
 
             start_i = i
             end_i = len(bb) - start_i - 1
-            down_curve = get_curve('down', start_i, end_i, w_dist, h_dist)
+            down_curve = SvgFold.get_curve('down', start_i, end_i, w_dist, h_dist)
 
             path = [*start_point, *vertical_line, *down_curve]
 
             while bb[end_i] != '|':
 
                 start_i = end_i
-                end_i = matching_brackets[end_i]
-                up_curve = get_curve('up', start_i, end_i, w_dist, h_dist)
+                end_i = bb.ambi[end_i]
+                up_curve = SvgFold.get_curve('up', start_i, end_i, w_dist, h_dist)
 
                 start_i = end_i
                 end_i = len(bb) - start_i - 1
-                down_curve = get_curve('down', start_i, end_i, w_dist, h_dist)
+                down_curve = SvgFold.get_curve('down', start_i, end_i, w_dist, h_dist)
 
                 path += up_curve + down_curve
 
@@ -160,13 +122,33 @@ class SvgFold(SvgImage):
             self.add('path',
                 d = path,
                 fill="none",
-                stroke=next(self.plate),
+                stroke=next(self.palette),
                 style="stroke-width:7",
             )
             already_done.append(end_i)
 
     def render(self):
         self.clear()
-        self.add('rect', width=self.width, height=self.height, style="fill:white")
+        #self.add('rect', width=self.width, height=self.height, style="fill:white")
         self.draw_lines()
         return super().render()
+
+    @staticmethod
+    def get_curve(direction, start_i, end_i, w_dist, h_dist):
+        assert direction in {'up', 'down'}
+
+        length = end_i - start_i
+
+        end_x = w_dist * length
+        end_y = 0
+
+        control_x = end_x / 2
+        control_y = h_dist * length
+
+        if (
+            (direction == 'up'   and control_y > 0) or
+            (direction == 'down' and control_y < 0)
+        ):
+            control_y *= -1
+
+        return ('q', control_x, control_y, end_x, end_y)

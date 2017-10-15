@@ -8,14 +8,14 @@ with a fixed bitmap font like GNU Unifont Mono.
 
 from itertools import cycle, chain
 
-from svg_falts import SvgFold
-from unicode_falts import to_2d_repr, color_available, colorize
+from barbra import BarBra
 
-
-default_plate_unicode = ("red green yellow blue magenta cyan light_red light_green "
+default_palette_unicode = ("red green yellow blue magenta cyan light_red light_green "
     + "light_yellow light_blue light_magenta light_cyan dark_gray light_gray")
 
-default_plate_svg = "blue red green purple orange limegreen magenta cyan brown black"
+default_palette_svg = "blue red green purple orange limegreen magenta cyan brown black"
+
+
 
 def main():
     import argparse
@@ -25,11 +25,11 @@ def main():
         description = "Converts bar-bra notation for the side views of cross-folded paper to a 2-dimensional terminal output. For color options look at: github.com/dslackw/colored",
         epilog = 'Example: python falten.py -p "cyan magenta blue" "||.||().||.||()||()"',
     )
-    parser.add_argument('--plate', '-p',
+    parser.add_argument('--palette', '-p',
         metavar = "str",
         help = "Space separated string of colors.",
     )
-    parser.add_argument('-b', '--background',
+    parser.add_argument('--invert-bg',
         action = 'store_true',
         help = "Color background instead of foreground.",
     )
@@ -51,24 +51,22 @@ def main():
     falt_iter = (string.split() for string in args.barbra)
     falt_iter = filter(bool, chain(*falt_iter))
 
-    if args.plate == None:
-        plate = default_plate_svg if args.svg else default_plate_unicode
+    if args.palette == None:
+        palette = default_palette_svg if args.svg else default_palette_unicode
     else:
-        plate = args.plate
+        palette = args.palette
 
-    plate = cycle(plate.split())
+    palette = cycle(palette.split())
 
-    if args.svg:
-        for bb in falt_iter:
-            img = SvgFold(bb, plate=plate)
-            svg_code = img.render()
-            print(svg_code)
-    else:
-        for bb in falt_iter:
-            falt_2d_str = to_2d_repr(bb)
-            if plate and color_available:
-                falt_2d_str = colorize(falt_2d_str, plate, args.background)
-            print(falt_2d_str, end='\n')
+    for barbra_str in falt_iter: # this iterates the input lines
+        bb = BarBra(barbra_str)
+
+        if args.svg:
+            output = bb.render_svg(palette)
+        else:
+            output = bb.render_unicode(palette, args.invert_bg)
+
+        print(output)
 
 
 if __name__ == '__main__':

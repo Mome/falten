@@ -1,11 +1,11 @@
 try:
     import colored
-    color_available = True
+    TERMINAL_COLOR_AVAILABLE = True
 except Exception as e:
     print(e)
     print('Terminal coloring not available!')
     print('Install with: ´pip install colored´')
-    color_available = False
+    TERMINAL_COLOR_AVAILABLE = False
 
 bottom_left = '╰' #'└'
 top_right = '╮' #'┐'
