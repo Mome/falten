@@ -11,6 +11,31 @@ from itertools import cycle, chain
 from barbra import BarBra
 
 
+def numlist2barbra(numlist, allow_mixed=True):
+    """Converts list of number into Barbra str."""
+
+    def _n2b(n):
+        try:
+            n = int(n)
+        except ValueError:
+            if allow_mixed and (type(n) == str):
+                return n
+            else:
+                raise
+        if n == 0:
+            out = "|"
+        elif n == 1:
+            out = "()"
+        else:
+            out = "(" + _n2b(n-1) + ")"
+        return out
+
+    bb = map(_n2b, numlist)
+    bb = map(str, bb)
+    bb = "".join(bb)
+    return bb
+
+
 def main():
     import argparse
     import sys
@@ -42,8 +67,9 @@ def main():
     if args.barbra == sys.stdin:
         args.barbra = args.barbra.readlines()
 
-    falt_iter = (string.split() for string in args.barbra)
+    falt_iter = (bbstr.split() for bbstr in args.barbra)
     falt_iter = filter(bool, chain(*falt_iter))
+    falt_iter = map(numlist2barbra, falt_iter) # convert numbers into BarBra
 
     for barbra_str in falt_iter: # this iterates the input lines
         bb = BarBra(barbra_str)
